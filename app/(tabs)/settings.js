@@ -42,6 +42,13 @@ const Settings = () => {
 
       <TouchableOpacity
         style={tw`py-3 border-b border-gray-300 flex-row items-center justify-between`}
+        onPress={() => router.push("Profile")}
+      >
+        <Text style={[tw`text-base`, dynamicStyles.textColor]}>My Profile</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={tw`py-3 border-b border-gray-300 flex-row items-center justify-between`}
         onPress={() => router.push("ReadNews")}
       >
         <Text style={[tw`text-base`, dynamicStyles.textColor]}>History</Text>

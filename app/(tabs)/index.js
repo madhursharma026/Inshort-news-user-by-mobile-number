@@ -77,7 +77,7 @@ const DiscoverScreen = () => {
   return (
     <ScrollView
       contentContainerStyle={[
-        tw`flex-grow p-2.5`,
+        tw`flex-grow p-2.5 pb-16`,
         dynamicStyles.backgroundColor,
       ]}
     >

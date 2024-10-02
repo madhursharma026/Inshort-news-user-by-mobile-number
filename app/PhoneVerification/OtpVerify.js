@@ -84,6 +84,10 @@ const OtpVerify = () => {
               "loginUserSessionId",
               result.data.verifyOtp.data.sessionId
             );
+            await AsyncStorage.setItem(
+              "loginUserPhoneNumber",
+              result.data.verifyOtp.data.phoneNumber
+            );
             Alert.alert("Success", "OTP Verified Successfully!");
             router.push("/onboarding");
           } catch (error) {
