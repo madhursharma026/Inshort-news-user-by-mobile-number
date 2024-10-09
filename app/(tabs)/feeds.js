@@ -5,10 +5,9 @@ import { interpolate } from "react-native-reanimated";
 import Carousel from "react-native-reanimated-carousel";
 import { useLanguage } from "../../context/LanguageContext";
 import { useReadNews } from "../../context/ReadNewsContext";
-import { Dimensions, View, Text, Alert } from "react-native";
+import { Dimensions, View, Text, StatusBar } from "react-native";
 import UseDynamicStyles from "../../context/UseDynamicStyles";
 import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
 const client = new ApolloClient({
@@ -29,6 +28,7 @@ const GET_NEWS_BY_LANGUAGE_QUERY = gql`
       publishedAt
       readMoreContent
       sourceURLFormate
+      priority
     }
   }
 `;
@@ -66,31 +66,52 @@ const FeedsScreen = () => {
     (article) => !readArticles.some((read) => read.id === article.id)
   );
 
+  // Sorting logic
+  // Sorting logic
+  const sortedArticles = [...filteredArticles].sort((a, b) => {
+    const priorityOrder = {
+      high: 0,
+      normal: 1,
+      low: 2,
+    };
+
+    // Check if priority exists and handle undefined cases
+    const priorityA = a.priority ? a.priority.toLowerCase() : "normal"; // Default to "normal" if undefined
+    const priorityB = b.priority ? b.priority.toLowerCase() : "normal"; // Default to "normal" if undefined
+
+    const priorityComparison =
+      priorityOrder[priorityA] - priorityOrder[priorityB];
+
+    if (priorityComparison !== 0) return priorityComparison;
+
+    return new Date(b.publishedAt) - new Date(a.publishedAt);
+  });
+
   const handleSnapToItem = async (index) => {
     try {
-      const article = filteredArticles[index];
-      const readArticlesKey = "readArticles";
-      const existingArticlesJSON = await AsyncStorage.getItem(readArticlesKey);
-      const existingArticles = existingArticlesJSON
-        ? JSON.parse(existingArticlesJSON)
-        : [];
-      if (!existingArticles.some((a) => a.id === article.id)) {
-        existingArticles.push(article);
-        await AsyncStorage.setItem(
-          readArticlesKey,
-          JSON.stringify(existingArticles)
-        );
-      }
+      const article = sortedArticles[index];
+
+      await client.mutate({
+        mutation: gql`
+          mutation DowngradeNewsPriority($id: Int!) {
+            updateNews(id: $id, updateNewsInput: { priority: "low" }) {
+              id
+              priority
+            }
+          }
+        `,
+        variables: { id: article.id },
+      });
     } catch (error) {
-      console.error("Failed to save article or show alert", error);
+      console.error("Failed to downgrade priority", error);
     }
   };
 
   useEffect(() => {
-    if (filteredArticles.length > 0 && carouselRef.current) {
+    if (sortedArticles.length > 0 && carouselRef.current) {
       handleSnapToItem(0);
     }
-  }, [filteredArticles]);
+  }, [sortedArticles]);
 
   const renderCarouselItem = ({ item, index }) => (
     <SingleNews item={item} index={index} />
@@ -118,7 +139,7 @@ const FeedsScreen = () => {
     if (error) {
       return <StatusMessage message={`Error: ${error}`} />;
     }
-    if (filteredArticles.length === 0) {
+    if (sortedArticles.length === 0) {
       return <StatusMessage message="No articles available" />;
     }
 
@@ -131,7 +152,7 @@ const FeedsScreen = () => {
           vertical={true}
           width={windowWidth}
           height={windowHeight}
-          data={filteredArticles}
+          data={sortedArticles} // Use sortedArticles here
           renderItem={renderCarouselItem}
           onSnapToItem={handleSnapToItem}
           customAnimation={animationStyle}

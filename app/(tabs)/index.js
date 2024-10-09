@@ -68,8 +68,16 @@ const DiscoverScreen = () => {
 
   if (loading) {
     return (
-      <View style={[tw`flex-1 justify-center`, dynamicStyles.backgroundColor]}>
+      <View
+        style={[
+          tw`flex-1 justify-center items-center`,
+          dynamicStyles.backgroundColor,
+        ]}
+      >
         <ActivityIndicator size="large" color="#0000ff" />
+        <Text style={[tw`mt-4`, dynamicStyles.textColor]}>
+          Loading articles...
+        </Text>
       </View>
     );
   }
@@ -123,72 +131,85 @@ const DiscoverScreen = () => {
           </>
         ) : (
           <>
-            {articlesToShow.map((article) => (
-              <TouchableOpacity
-                key={article.id} // Add key here
-                onPress={() =>
-                  router.push({
-                    pathname: "/SingleArticle",
-                    params: {
-                      title: article.title,
-                      imageURL: article.imageURL,
-                      description: article.description,
-                    },
-                  })
-                }
-                activeOpacity={1}
-                style={tw`mb-4`}
-              >
-                <View
-                  style={tw`bg-white rounded-xl p-4 mb-4 shadow-lg shadow-blue-500`}
-                >
-                  <View style={tw`flex-row`}>
-                    <View style={tw`flex-1 pr-4`}>
-                      <Text
-                        style={tw`text-lg font-semibold mb-2 text-gray-900`}
-                        numberOfLines={3}
-                      >
-                        {article?.title}
+            {articles.length === 0 ? (
+              <View style={tw`flex-1 justify-center mt-4`}>
+                <Text style={tw`text-gray-500 text-xl`}>
+                  No articles available.
+                </Text>
+              </View>
+            ) : (
+              <>
+                {articlesToShow.map((article) => (
+                  <TouchableOpacity
+                    key={article.id} // Add key here
+                    onPress={() =>
+                      router.push({
+                        pathname: "/SingleArticle",
+                        params: {
+                          title: article.title,
+                          imageURL: article.imageURL,
+                          description: article.description,
+                        },
+                      })
+                    }
+                    activeOpacity={1}
+                    style={tw`mb-4`}
+                  >
+                    <View
+                      style={tw`bg-white rounded-xl p-4 mb-4 shadow-lg shadow-blue-500`}
+                    >
+                      <View style={tw`flex-row`}>
+                        <View style={tw`flex-1 pr-4`}>
+                          <Text
+                            style={tw`text-lg font-semibold mb-2 text-gray-900`}
+                            numberOfLines={3}
+                          >
+                            {article?.title}
+                          </Text>
+                        </View>
+                        <Image
+                          source={require("../../assets/favicon.png")}
+                          style={tw`w-16 h-16`}
+                        />
+                      </View>
+                      <View style={tw`mt-2`}>
+                        <RenderHTML
+                          contentWidth={width}
+                          source={{
+                            html: `${
+                              article?.description?.length > 155
+                                ? `${article.description.slice(0, 155)}...`
+                                : article.description || ""
+                            }`,
+                          }}
+                          baseStyle={{
+                            ...tw`text-base`,
+                            ...{ color: "#333" },
+                          }}
+                        />
+                      </View>
+                      <Text style={tw`text-xs text-gray-500 mt-2`}>
+                        {formatDistanceToNow(
+                          new Date(`${article?.createdAt}`),
+                          {
+                            addSuffix: true,
+                          }
+                        )}
                       </Text>
                     </View>
-                    <Image
-                      source={require("../../assets/favicon.png")}
-                      style={tw`w-16 h-16`}
-                    />
-                  </View>
-                  <View style={tw`mt-2`}>
-                    <RenderHTML
-                      contentWidth={width}
-                      source={{
-                        html: `${
-                          article?.description?.length > 155
-                            ? `${article.description.slice(0, 155)}...`
-                            : article.description || ""
-                        }`,
-                      }}
-                      baseStyle={{
-                        ...tw`text-base`,
-                        ...{ color: "#333" },
-                      }}
-                    />
-                  </View>
-                  <Text style={tw`text-xs text-gray-500 mt-2`}>
-                    {formatDistanceToNow(new Date(`${article?.createdAt}`), {
-                      addSuffix: true,
-                    })}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-            {visibleArticles < articles.length && (
-              <TouchableOpacity
-                onPress={() => setVisibleArticles((prev) => prev + 2)}
-                style={tw`p-2.5 bg-blue-500 rounded-lg`}
-              >
-                <Text style={tw`text-white text-center font-semibold`}>
-                  More Articles
-                </Text>
-              </TouchableOpacity>
+                  </TouchableOpacity>
+                ))}
+                {visibleArticles < articles.length && (
+                  <TouchableOpacity
+                    onPress={() => setVisibleArticles((prev) => prev + 2)}
+                    style={tw`p-2.5 bg-blue-500 rounded-lg`}
+                  >
+                    <Text style={tw`text-white text-center font-semibold`}>
+                      More Articles
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </>
             )}
           </>
         )}
