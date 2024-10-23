@@ -20,7 +20,10 @@ const TermsOfService = () => {
 
   return (
     <ScrollView
-      contentContainerStyle={[tw`flex-1 p-4`, dynamicStyles.backgroundColor]}
+      style={{ flex: 1 }} // Ensure ScrollView takes full height
+      contentContainerStyle={[tw`flex-grow p-4`, dynamicStyles.backgroundColor]} // Use flex-grow
+      keyboardShouldPersistTaps="handled" // Ensures taps work when keyboard is up
+      contentInsetAdjustmentBehavior="automatic" // Adjusts insets for iOS
     >
       <View>
         <Text

@@ -7,20 +7,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import tw from "twrnc";
-import { APIURL } from "@env";
+import { gql } from "@apollo/client";
 import { useRouter } from "expo-router";
 import { formatDistanceToNow } from "date-fns";
+import client from "../../context/ApolloClient";
 import RenderHTML from "react-native-render-html";
 import { useWindowDimensions } from "react-native";
 import React, { useEffect, useState, useMemo } from "react";
 import UseDynamicStyles from "../../context/UseDynamicStyles";
-import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
-
-// Apollo Client setup
-const client = new ApolloClient({
-  uri: APIURL,
-  cache: new InMemoryCache(),
-});
 
 const GET_NEWS_BY_LANGUAGE_QUERY = gql`
   query {
@@ -168,7 +162,7 @@ const DiscoverScreen = () => {
                           </Text>
                         </View>
                         <Image
-                          source={require("../../assets/favicon.png")}
+                          source={{ uri: article.imageURL }}
                           style={tw`w-16 h-16`}
                         />
                       </View>

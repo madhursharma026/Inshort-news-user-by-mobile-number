@@ -1,19 +1,20 @@
+import {
+  View,
+  Text,
+  ScrollView,
+  Dimensions,
+  RefreshControl,
+} from "react-native";
 import tw from "twrnc";
-import { APIURL } from "@env";
-import SingleNews from "../../components/SingleNews";
+import { gql } from "@apollo/client";
+import SingleNews from "../SingleNews";
+import client from "../../context/ApolloClient";
 import { interpolate } from "react-native-reanimated";
 import Carousel from "react-native-reanimated-carousel";
 import { useLanguage } from "../../context/LanguageContext";
 import { useReadNews } from "../../context/ReadNewsContext";
-import { Dimensions, View, Text, StatusBar } from "react-native";
 import UseDynamicStyles from "../../context/UseDynamicStyles";
-import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
 import React, { useState, useEffect, useCallback, useRef } from "react";
-
-const client = new ApolloClient({
-  uri: APIURL,
-  cache: new InMemoryCache(),
-});
 
 const GET_NEWS_BY_LANGUAGE_QUERY = gql`
   query GetNewsByLanguage($language: String!) {
@@ -22,13 +23,13 @@ const GET_NEWS_BY_LANGUAGE_QUERY = gql`
       url
       title
       author
+      priority
       language
       sourceURL
       description
       publishedAt
       readMoreContent
       sourceURLFormate
-      priority
     }
   }
 `;
@@ -42,32 +43,39 @@ const FeedsScreen = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const windowWidth = Dimensions.get("window").width;
+  const [refreshing, setRefreshing] = useState(false);
   const windowHeight = Dimensions.get("window").height;
 
+  const fetchArticles = async () => {
+    setLoading(true);
+    try {
+      const { data } = await client.query({
+        query: GET_NEWS_BY_LANGUAGE_QUERY,
+        variables: { language },
+        fetchPolicy: "network-only", // Ensure fresh data is fetched
+      });
+      setArticles(data.newsByLanguage);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchArticles = async () => {
-      setLoading(true);
-      try {
-        const { data } = await client.query({
-          query: GET_NEWS_BY_LANGUAGE_QUERY,
-          variables: { language },
-        });
-        setArticles(data.newsByLanguage);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchArticles();
+  }, [language]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchArticles();
+    setRefreshing(false);
   }, [language]);
 
   const filteredArticles = articles.filter(
     (article) => !readArticles.some((read) => read.id === article.id)
   );
 
-  // Sorting logic
-  // Sorting logic
   const sortedArticles = [...filteredArticles].sort((a, b) => {
     const priorityOrder = {
       high: 0,
@@ -75,10 +83,8 @@ const FeedsScreen = () => {
       low: 2,
     };
 
-    // Check if priority exists and handle undefined cases
-    const priorityA = a.priority ? a.priority.toLowerCase() : "normal"; // Default to "normal" if undefined
-    const priorityB = b.priority ? b.priority.toLowerCase() : "normal"; // Default to "normal" if undefined
-
+    const priorityA = a.priority ? a.priority.toLowerCase() : "normal";
+    const priorityB = b.priority ? b.priority.toLowerCase() : "normal";
     const priorityComparison =
       priorityOrder[priorityA] - priorityOrder[priorityB];
 
@@ -152,7 +158,7 @@ const FeedsScreen = () => {
           vertical={true}
           width={windowWidth}
           height={windowHeight}
-          data={sortedArticles} // Use sortedArticles here
+          data={sortedArticles}
           renderItem={renderCarouselItem}
           onSnapToItem={handleSnapToItem}
           customAnimation={animationStyle}
@@ -162,19 +168,25 @@ const FeedsScreen = () => {
   };
 
   const StatusMessage = ({ message }) => (
-    <Text style={[tw`text-lg text-center`, dynamicStyles.textColor]}>
-      {message}
-    </Text>
+    <View
+      style={[tw`flex-1 justify-center items-center`, { height: windowHeight }]}
+    >
+      <Text style={[tw`text-lg text-center`, dynamicStyles.textColor]}>
+        {message}
+      </Text>
+    </View>
   );
 
   return (
-    <View
-      style={[
-        dynamicStyles.backgroundColor,
-        tw`flex-1 justify-center items-center`,
-      ]}
-    >
-      {renderContent()}
+    <View style={[dynamicStyles.backgroundColor, tw`flex-1`]}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {renderContent()}
+      </ScrollView>
     </View>
   );
 };

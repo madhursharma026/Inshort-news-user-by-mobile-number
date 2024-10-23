@@ -68,6 +68,9 @@ function ThemedLayout() {
           />
           <Stack.Screen name="ImageViewer/index" />
           <Stack.Screen name="SingleArticle/index" />
+          <Stack.Screen name="SingleArticleById/index" />
+          <Stack.Screen name="SingleNews/index" />
+          <Stack.Screen name="SingleNewsById/index" />
           <Stack.Screen name="Profile/index" />
         </Stack>
       </View>
